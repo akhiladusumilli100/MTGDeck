@@ -5,6 +5,7 @@
   <title>Card Info</title>
 </head>
 <body>
+  {% include 'cards/auth_nav.html' %}
   <p><a href="{% url 'card_search' %}">&larr; Card Search</a></p>
   <h1>Card Info</h1>
   <form method="get" action="{% url 'get_card_info' %}">

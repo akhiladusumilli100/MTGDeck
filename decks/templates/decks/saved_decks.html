@@ -5,11 +5,12 @@
   <title>Saved Decks</title>
 </head>
 <body>
+  {% include 'cards/auth_nav.html' %}
   <p><a href="{% url 'deck_builder' %}">&larr; Deck Builder</a></p>
   <h1>Saved Decks</h1>
   <ul>
     {% for deck in decks %}
-      <li>
+      <li style="margin-bottom: 0.5em;">
         <a href="{% url 'deck_detail' deck.pk %}">{{ deck.name }}</a>
         <form method="post" action="{% url 'delete_deck' deck.pk %}" style="display: inline;">
           {% csrf_token %}

@@ -1,5 +1,8 @@
 import math
 
+from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
@@ -100,6 +103,14 @@ def _group_cards(scored_cards, limit=None):
         if group_cards
     ]
 
+def signup(request):
+    form = UserCreationForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        login(request, form.save())
+        return redirect("home")
+    return render(request, "registration/signup.html", {"form": form})
+
+@login_required
 @require_POST
 def save_deck(request):
     name = request.POST.get("deck_name", "").strip()
@@ -111,21 +122,25 @@ def save_deck(request):
         pk__in=request.POST.getlist("card_ids")
     ).values_list("pk", flat=True)
     with transaction.atomic():
-        deck = Deck.objects.create(name=name[:100], commander=commander)
+        deck = Deck.objects.create(name=name[:100], commander=commander, owner_id=request.user.pk)
         Deck_Cards.objects.bulk_create([Deck_Cards(deck=deck, card_id=pk) for pk in card_pks])
     return redirect("deck_detail", deck_id=deck.pk)
 
+@login_required
 def saved_decks(request):
-    return render(request, "decks/saved_decks.html", {"decks": Deck.objects.order_by("name")})
+    decks = Deck.objects.filter(owner_id=request.user.pk).order_by("name")
+    return render(request, "decks/saved_decks.html", {"decks": decks})
 
+@login_required
 @require_POST
 def delete_deck(request, deck_id):
-    deck = get_object_or_404(Deck, pk=deck_id)
+    deck = get_object_or_404(Deck, pk=deck_id, owner_id=request.user.pk)
     deck.delete()
     return redirect("saved_decks")
 
+@login_required
 def deck_detail(request, deck_id):
-    deck = get_object_or_404(Deck, pk=deck_id)
+    deck = get_object_or_404(Deck, pk=deck_id, owner_id=request.user.pk)
     cards_qs = Card.objects.using(CARD_DATABASE_ALIAS).select_related("role", "archetype")
     commander = cards_qs.get(pk=deck.commander_id)
     card_ids = list(Deck_Cards.objects.filter(deck=deck).values_list("card_id", flat=True))
@@ -137,18 +152,24 @@ def deck_detail(request, deck_id):
 
 def get_valid_cards(request):
 
-    query = request.GET.get("q", "")
+    query = request.GET.get("q", "").strip()
     valid_cards = []
     card_groups = []
     error = ""
-    commander = (
-        Card.objects.using(CARD_DATABASE_ALIAS)
-        .select_related("role", "archetype")
-        .filter(name__icontains=query)
-        .first()
-    )
+    commander = None
+    if not query:
+        error = "Please enter a commander."
+    else:
+        commander = (
+            Card.objects.using(CARD_DATABASE_ALIAS)
+            .select_related("role", "archetype")
+            .filter(name__icontains=query)
+            .first()
+        )
 
-    if not commander:
+    if error:
+        pass
+    elif not commander:
         error = "Commander not found."
     elif commander.type_line and "Legendary" in commander.type_line and (
         "Creature" in commander.type_line or "Artifact" in commander.type_line
