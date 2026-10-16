@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Build Deck</title>
+</head>
+<body>
+  <p><a href="{% url 'deck_builder' %}">&larr; Deck Builder</a></p>
+  <h1>Build Deck</h1>
+    <form method="get" action="{% url 'get_valid_cards' %}">
+    <label for="card_name">Commander:</label>
+    <input type="search" name="q" value="{{ query }}" placeholder="Enter Commander Name" autofocus>
+    <button type="submit">Generate Valid Cards</button>
+  </form>
+
+  {% if card_groups %}
+    <form method="post" action="{% url 'save_deck' %}">
+      {% csrf_token %}
+      <input type="hidden" name="commander_id" value="{{ commander.pk }}">
+      {% for group in card_groups %}{% for entry in group.cards %}
+        <input type="hidden" name="card_ids" value="{{ entry.card.pk }}">
+      {% endfor %}{% endfor %}
+      <input type="text" name="deck_name" placeholder="Deck name" maxlength="100" required>
+      <button type="submit">Save Deck</button>
+    </form>
+    <h2>Valid Cards</h2>
+    <p>Commander: {{ commander.name }}</p>
+    {% for group in card_groups %}
+      <h3 style="margin-bottom: 0;">{{ group.name }}</h3>
+      <ul style="list-style: none; padding-left: 0; margin-top: 0;">
+        {% for entry in group.cards %}
+          <li>- {{ entry.card }} ({{ entry.score }})</li>
+        {% endfor %}
+      </ul>
+    {% endfor %}
+  {% endif %}
+
+  {% if error %}
+    <p>{{ error }}</p>
+  {% endif %}
+
+
+</body>
+</html>

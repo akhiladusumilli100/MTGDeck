@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Card Search</title>
+</head>
+<body>
+  <p><a href="{% url 'home' %}">&larr; Home</a></p>
+  <h1>Card Search</h1>
+  <form method="get" action="{% url 'card_search' %}">
+    <input type="search" name="q" value="{{ query }}" placeholder="Search card name" autofocus>
+    <button type="submit">Search</button>
+  </form>
+
+  {% if query %}
+    <h2>Results for "{{ query }}" ({{ cards|length }}{% if truncated %}+{% endif %})</h2>
+    <ul>
+      {% for card in cards %}
+        <li>
+          <a href="{% url 'get_card_info' %}?id={{ card.scryfall_id }}"><strong>{{ card.name }}</strong></a> {{ card.mana_cost|default_if_none:"" }}
+          &mdash; {{ card.type_line|default_if_none:"" }}
+          {% if card.oracle_text %}<br><small>{{ card.oracle_text|linebreaksbr }}</small>{% endif %}
+        </li>
+      {% empty %}
+        <li>No cards found.</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</body>
+</html>
