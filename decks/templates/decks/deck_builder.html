@@ -5,6 +5,7 @@
   <title>Deck Builder</title>
 </head>
 <body>
+  {% include 'cards/auth_nav.html' %}
   <p><a href="{% url 'home' %}">&larr; Home</a></p>
   <h1>Deck Builder</h1>
   <a href="{% url 'build_deck' %}"><button type="button">Build Deck</button></a>

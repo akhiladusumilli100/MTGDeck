@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Sign up</title>
+</head>
+<body>
+  {% include 'cards/auth_nav.html' %}
+  <h1>Sign up</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <p>
+      {{ form.username.errors }}
+      {{ form.username.label_tag }} {{ form.username }}
+      <br><small>{{ form.username.help_text }}</small>
+    </p>
+    <p>
+      {{ form.password1.help_text|safe }}
+      {{ form.password1.errors }}
+      {{ form.password1.label_tag }} {{ form.password1 }}
+    </p>
+    <p>
+      {{ form.password2.errors }}
+      {{ form.password2.label_tag }} {{ form.password2 }}
+      <br><small>{{ form.password2.help_text }}</small>
+    </p>
+    <button type="submit">Sign up</button>
+  </form>
+  <p>Already have an account? <a href="{% url 'login' %}">Log in</a></p>
+</body>
+</html>

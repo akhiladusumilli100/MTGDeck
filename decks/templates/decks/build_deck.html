@@ -5,6 +5,7 @@
   <title>Build Deck</title>
 </head>
 <body>
+  {% include 'cards/auth_nav.html' %}
   <p><a href="{% url 'deck_builder' %}">&larr; Deck Builder</a></p>
   <h1>Build Deck</h1>
     <form method="get" action="{% url 'get_valid_cards' %}">
@@ -14,7 +15,7 @@
   </form>
 
   {% if card_groups %}
-    <form method="post" action="{% url 'save_deck' %}">
+    <form method="post" action="{% url 'save_deck' %}"{% if not user.is_authenticated %} onsubmit="document.getElementById('login-warning').hidden = false; return false;"{% endif %}>
       {% csrf_token %}
       <input type="hidden" name="commander_id" value="{{ commander.pk }}">
       {% for group in card_groups %}{% for entry in group.cards %}
@@ -23,6 +24,7 @@
       <input type="text" name="deck_name" placeholder="Deck name" maxlength="100" required>
       <button type="submit">Save Deck</button>
     </form>
+    <p id="login-warning" hidden style="color: red;">You must be logged in to save a deck.</p>
     <h2>Valid Cards</h2>
     <p>Commander: {{ commander.name }}</p>
     {% for group in card_groups %}
@@ -36,7 +38,7 @@
   {% endif %}
 
   {% if error %}
-    <p>{{ error }}</p>
+    <p style="color: red;">{{ error }}</p>
   {% endif %}
 
 
