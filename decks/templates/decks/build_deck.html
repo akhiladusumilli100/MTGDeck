@@ -15,6 +15,7 @@
   </form>
 
   {% if card_groups %}
+    <li style="margin-bottom: 0.1;"></li>
     <form method="post" action="{% url 'save_deck' %}"{% if not user.is_authenticated %} onsubmit="document.getElementById('login-warning').hidden = false; return false;"{% endif %}>
       {% csrf_token %}
       <input type="hidden" name="commander_id" value="{{ commander.pk }}">
