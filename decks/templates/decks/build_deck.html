@@ -15,6 +15,7 @@
   </form>
 
   {% if card_groups %}
+    <li style="margin-bottom: 0.1;"></li>
     <form method="post" action="{% url 'save_deck' %}"{% if not user.is_authenticated %} onsubmit="document.getElementById('login-warning').hidden = false; return false;"{% endif %}>
       {% csrf_token %}
       <input type="hidden" name="commander_id" value="{{ commander.pk }}">
@@ -26,9 +27,9 @@
     </form>
     <p id="login-warning" hidden style="color: red;">You must be logged in to save a deck.</p>
     <h2>Valid Cards</h2>
-    <p>Commander: {{ commander.name }}</p>
+    <p><strong>Commander:</strong> {{ commander.name }}</p>
     {% for group in card_groups %}
-      <h3 style="margin-bottom: 0;">{{ group.name }}</h3>
+      <h3 style="margin-bottom: 0;">{{ group.name }} ({{ group.cards|length }})</h3>
       <ul style="list-style: none; padding-left: 0; margin-top: 0;">
         {% for entry in group.cards %}
           <li>- {{ entry.card }} ({{ entry.score }})</li>

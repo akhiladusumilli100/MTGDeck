@@ -17,13 +17,24 @@ SUBTYPE_BONUS = 0.25
 TYPAL_PREFIX = "typal-"
 
 
-def _typal_types(card):
+def _typal_types_for_oracle_ids(oracle_ids):
+    if not oracle_ids:
+        return {}
     slugs = (
         Tagging.objects.using(CARD_DATABASE_ALIAS)
-        .filter(oracle_id=card.oracle_id, tag__slug__startswith=TYPAL_PREFIX)
-        .values_list("tag__slug", flat=True)
+        .filter(oracle_id__in=oracle_ids, tag__slug__startswith=TYPAL_PREFIX)
+        .values_list("oracle_id", "tag__slug")
     )
-    return {slug[len(TYPAL_PREFIX):].lower() for slug in slugs} if card.oracle_id else set()
+    typal_types = {}
+    for oracle_id, slug in slugs:
+        typal_types.setdefault(oracle_id, set()).add(slug[len(TYPAL_PREFIX):].lower())
+    return typal_types
+
+
+def _typal_types(card):
+    if not card.oracle_id:
+        return set()
+    return _typal_types_for_oracle_ids({card.oracle_id}).get(card.oracle_id, set())
 
 def _matches_typal(card, typal_types):
     if not typal_types:
@@ -54,11 +65,15 @@ def score_synergy(commander, cards):
     """Return [(card, score)] sorted by descending synergy with the commander.
 
     Score = mean of role and archetype cosine similarities, plus SUBTYPE_BONUS
-    if the commander has a typal-<type> tag and the card has that subtype or changeling.
+    for a matching typal subtype or changeling, or minus it for conflicting typal tags.
     """
     cmd_roles = _vector(commander, "role", ROLE_NAMES)
     cmd_archetypes = _vector(commander, "archetype", ARCHETYPE_NAMES)
     typal_types = _typal_types(commander)
+    cards = list(cards)
+    card_typal_types = _typal_types_for_oracle_ids(
+        {card.oracle_id for card in cards if card.oracle_id}
+    )
 
     scored = []
     for card in cards:
@@ -66,11 +81,81 @@ def score_synergy(commander, cards):
         score += 0.45 * _cosine(cmd_roles, _vector(card, "role", ROLE_NAMES)) 
         score += 0.55 * _cosine(cmd_archetypes, _vector(card, "archetype", ARCHETYPE_NAMES))
         
-        if _matches_typal(card, typal_types):
+        card_tags = card_typal_types.get(card.oracle_id, set())
+        has_choose_tag = "choose" in card_tags
+        if typal_types and card_tags and not (card_tags & typal_types) and not has_choose_tag:
+            score -= 1.5 * SUBTYPE_BONUS
+        elif (has_choose_tag and typal_types) or _matches_typal(card, typal_types):
             score += SUBTYPE_BONUS
         scored.append((card, round(score, 3)))
     scored.sort(key=lambda item: item[1], reverse=True)
     return scored
+
+
+def score_lands(commander, cards):
+    """Return [(card, score)] for lands sorted by descending synergy with the commander."""
+    commander_colors = {c.strip() for c in commander.color_identity.split(",") if c.strip()}
+    scored = []
+    for card in cards:
+        text = card.oracle_text or ""
+        lowered = text.lower()
+        score = 0.3
+
+        basic_subtypes = {"Plains", "Island", "Swamp", "Mountain", "Forest"}
+        
+
+        # Dual/tri lands with basic land types fix mana and are fetchable.
+
+        score += 0.15 * len(_subtypes(card) & basic_subtypes)
+
+        if "Basic" in (card.type_line or ""):
+            score += 0.2
+
+        if "enters tapped" in lowered or "enters the battlefield tapped" in lowered:
+            if "unless" in lowered:
+                score -= 0.05
+            else:
+                score -= 0.15
+
+        if "any color" in lowered:
+            score += 0.25
+        else:
+            produced = sum(1 for c in commander_colors if "{%s}" % c in text)
+            if commander_colors:
+                score += 0.3 * produced / len(commander_colors)
+
+        if "scry" in lowered or "surveil" in lowered:
+            score += 0.1
+
+        if "search your library" in lowered:
+            score += 0.1
+
+        if "spend this only" in lowered:
+            score -= 0.1
+
+        scored.append((card, round(min(max(score, 0.0), 1.0), 3)))
+    scored.sort(key=lambda item: item[1], reverse=True)
+    return scored
+
+
+def score_with_lands(commander, cards):
+    """Score cards by synergy; lands get 30% synergy score and 70% land score."""
+    
+    cards = list(cards)
+
+    land_rate = 0.65
+    synergy_rate = 0.35
+
+    synergy = score_synergy(commander, cards)
+    lands = [card for card, _ in synergy if "Land" in (card.type_line or "").split()]
+    land_scores = dict(score_lands(commander, lands))
+    blended = [
+        (card, round(synergy_rate * score + land_rate * land_scores[card], 3)) if card in land_scores else (card, score)
+        for card, score in synergy
+    ]
+    blended.sort(key=lambda item: item[1], reverse=True)
+    return blended
+
 
 CARD_TYPE_GROUPS = (
     ("Creatures", "Creature"),
@@ -83,13 +168,23 @@ CARD_TYPE_GROUPS = (
     ("Lands", "Land"),
 )
 
+DECK_GROUP_LIMITS = {
+    "Creatures": 32,
+    "Artifacts": 8,
+    "Enchantments": 5,
+    "Instants": 10,
+    "Sorceries": 5,
+    "Planeswalkers": 3,
+    "Lands": 36,
+}
+
 def deck_builder(request):
     return render(request, "decks/deck_builder.html")
 
 def build_deck(request):
     return render(request, "decks/build_deck.html")
 
-def _group_cards(scored_cards, limit=None):
+def _group_cards(scored_cards, limits=None):
     grouped_cards = {group_name: [] for group_name, _ in CARD_TYPE_GROUPS}
     for card, score in scored_cards:
         card_types = (card.type_line or "").split()
@@ -97,11 +192,11 @@ def _group_cards(scored_cards, limit=None):
             if card_type in card_types:
                 grouped_cards[group_name].append({"card": card, "score": score})
                 break
-    return [
-        {"name": group_name, "cards": group_cards[:limit]}
-        for group_name, group_cards in grouped_cards.items()
-        if group_cards
+    groups = [
+        {"name": name, "cards": cards[:limits.get(name, 0)] if limits is not None else cards}
+        for name, cards in grouped_cards.items()
     ]
+    return [group for group in groups if group["cards"]]
 
 def signup(request):
     form = UserCreationForm(request.POST or None)
@@ -179,7 +274,7 @@ def get_valid_cards(request):
             for color in commander.color_identity.split(",")
             if color.strip()
         }
-        valid_cards = score_synergy(
+        valid_cards = score_with_lands(
             commander,
             [
                 card
@@ -194,7 +289,7 @@ def get_valid_cards(request):
             ],
         )
 
-        card_groups = _group_cards(valid_cards, limit=15)
+        card_groups = _group_cards(valid_cards, limits=DECK_GROUP_LIMITS)
 
     else:
         error = "Invalid commander. Choose a legendary creature or artifact."

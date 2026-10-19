@@ -9,5 +9,8 @@
   <h1>Homepage</h1>
   <a href="{% url 'card_search' %}"><button type="button">Card Search</button></a>
   <a href="{% url 'deck_builder' %}"><button type="button">Deck Builder</button></a>
+  {% if user.is_staff %}
+    <a href="{% url 'admin:index' %}"><button type="button">Admin</button></a>
+  {% endif %}
 </body>
 </html>
