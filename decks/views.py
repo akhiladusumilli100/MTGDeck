@@ -17,13 +17,24 @@ SUBTYPE_BONUS = 0.25
 TYPAL_PREFIX = "typal-"
 
 
-def _typal_types(card):
+def _typal_types_for_oracle_ids(oracle_ids):
+    if not oracle_ids:
+        return {}
     slugs = (
         Tagging.objects.using(CARD_DATABASE_ALIAS)
-        .filter(oracle_id=card.oracle_id, tag__slug__startswith=TYPAL_PREFIX)
-        .values_list("tag__slug", flat=True)
+        .filter(oracle_id__in=oracle_ids, tag__slug__startswith=TYPAL_PREFIX)
+        .values_list("oracle_id", "tag__slug")
     )
-    return {slug[len(TYPAL_PREFIX):].lower() for slug in slugs} if card.oracle_id else set()
+    typal_types = {}
+    for oracle_id, slug in slugs:
+        typal_types.setdefault(oracle_id, set()).add(slug[len(TYPAL_PREFIX):].lower())
+    return typal_types
+
+
+def _typal_types(card):
+    if not card.oracle_id:
+        return set()
+    return _typal_types_for_oracle_ids({card.oracle_id}).get(card.oracle_id, set())
 
 def _matches_typal(card, typal_types):
     if not typal_types:
@@ -54,11 +65,15 @@ def score_synergy(commander, cards):
     """Return [(card, score)] sorted by descending synergy with the commander.
 
     Score = mean of role and archetype cosine similarities, plus SUBTYPE_BONUS
-    if the commander has a typal-<type> tag and the card has that subtype or changeling.
+    for a matching typal subtype or changeling, or minus it for conflicting typal tags.
     """
     cmd_roles = _vector(commander, "role", ROLE_NAMES)
     cmd_archetypes = _vector(commander, "archetype", ARCHETYPE_NAMES)
     typal_types = _typal_types(commander)
+    cards = list(cards)
+    card_typal_types = _typal_types_for_oracle_ids(
+        {card.oracle_id for card in cards if card.oracle_id}
+    )
 
     scored = []
     for card in cards:
@@ -66,7 +81,11 @@ def score_synergy(commander, cards):
         score += 0.45 * _cosine(cmd_roles, _vector(card, "role", ROLE_NAMES)) 
         score += 0.55 * _cosine(cmd_archetypes, _vector(card, "archetype", ARCHETYPE_NAMES))
         
-        if _matches_typal(card, typal_types):
+        card_tags = card_typal_types.get(card.oracle_id, set())
+        has_choose_tag = "choose" in card_tags
+        if typal_types and card_tags and not (card_tags & typal_types) and not has_choose_tag:
+            score -= 1.5 * SUBTYPE_BONUS
+        elif (has_choose_tag and typal_types) or _matches_typal(card, typal_types):
             score += SUBTYPE_BONUS
         scored.append((card, round(score, 3)))
     scored.sort(key=lambda item: item[1], reverse=True)
