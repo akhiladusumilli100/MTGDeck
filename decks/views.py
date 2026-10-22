@@ -290,7 +290,7 @@ def get_valid_cards(request):
         )
 
         card_groups = _group_cards(valid_cards, limits=DECK_GROUP_LIMITS)
-
+ 
     else:
         error = "Invalid commander. Choose a legendary creature or artifact."
 

@@ -1,16 +1,29 @@
-﻿<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Homepage</title>
-</head>
-<body>
-  {% include 'cards/auth_nav.html' %}
-  <h1>Homepage</h1>
-  <a href="{% url 'card_search' %}"><button type="button">Card Search</button></a>
-  <a href="{% url 'deck_builder' %}"><button type="button">Deck Builder</button></a>
-  {% if user.is_staff %}
-    <a href="{% url 'admin:index' %}"><button type="button">Admin</button></a>
-  {% endif %}
-</body>
-</html>
+{% extends 'cards/base.html' %}
+
+{% block title %}Homepage{% endblock %}
+
+{% block content %}
+  <div class="page-header">
+    <div>
+      <h1>Homepage</h1>
+      <p class="muted">Search cards, build Commander decks, and manage your saved lists.</p>
+    </div>
+  </div>
+  <div class="tile-grid">
+    <a class="tile" href="{% url 'card_search' %}">
+      <h2>Card Search</h2>
+      <p>Look up any card by name or rules text.</p>
+    </a>
+    <a class="tile" href="{% url 'deck_builder' %}">
+      <h2>Deck Builder</h2>
+      <p>Generate valid cards for a legendary commander.</p>
+    </a>
+    {% if user.is_staff %}
+      <a class="tile" href="{% url 'admin:index' %}">
+        <h2>Admin</h2>
+        <p>Manage the site data and users.</p>
+      </a>
+    {% endif %}
+  </div>
+{% endblock %}
+

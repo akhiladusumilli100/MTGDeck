@@ -1,11 +1,12 @@
-<div style="position: fixed; top: 10px; right: 10px;">
+<div class="auth">
   {% if user.is_authenticated %}
-    <span>{{ user.username }}</span>
-    <form method="post" action="{% url 'logout' %}" style="display: inline;">
+    <span class="auth-user">{{ user.username }}</span>
+    <form method="post" action="{% url 'logout' %}">
       {% csrf_token %}
-      <button type="submit">Log out</button>
+      <button type="submit" class="btn btn-ghost btn-sm">Log out</button>
     </form>
   {% else %}
-    <a href="{% url 'login' %}{% if request.path != '/accounts/login/' and request.path != '/accounts/signup/' %}?next={{ request.get_full_path|urlencode }}{% endif %}">Log in</a> | <a href="{% url 'signup' %}">Sign up</a>
+    <a class="btn btn-ghost btn-sm" href="{% url 'login' %}{% if request.path != '/accounts/login/' and request.path != '/accounts/signup/' %}?next={{ request.get_full_path|urlencode }}{% endif %}">Log in</a>
+    <a class="btn btn-primary btn-sm" href="{% url 'signup' %}">Sign up</a>
   {% endif %}
 </div>

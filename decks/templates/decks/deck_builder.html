@@ -1,14 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Deck Builder</title>
-</head>
-<body>
-  {% include 'cards/auth_nav.html' %}
-  <p><a href="{% url 'home' %}">&larr; Home</a></p>
-  <h1>Deck Builder</h1>
-  <a href="{% url 'build_deck' %}"><button type="button">Build Deck</button></a>
-  <a href="{% url 'saved_decks' %}"><button type="button">Saved Decks</button></a>
-</body>
-</html>
+{% extends 'cards/base.html' %}
+
+{% block title %}Deck Builder{% endblock %}
+
+{% block content %}
+  <div class="breadcrumb"><a href="{% url 'home' %}">&larr; Home</a></div>
+  <div class="page-header">
+    <div>
+      <h1>Deck Builder</h1>
+      <p class="muted">Start a new Commander deck or revisit one you've saved.</p>
+    </div>
+  </div>
+  <div class="tile-grid">
+    <a class="tile" href="{% url 'build_deck' %}">
+      <h2>Build Deck</h2>
+      <p>Pick a legendary commander and see every card in its color identity.</p>
+    </a>
+    <a class="tile" href="{% url 'saved_decks' %}">
+      <h2>Saved Decks</h2>
+      <p>Open, review, or delete the decks you've saved.</p>
+    </a>
+  </div>
+{% endblock %}
+

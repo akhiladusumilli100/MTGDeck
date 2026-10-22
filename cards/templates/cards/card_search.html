@@ -1,31 +1,31 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Card Search</title>
-</head>
-<body>
-  {% include 'cards/auth_nav.html' %}
-  <p><a href="{% url 'home' %}">&larr; Home</a></p>
-  <h1>Card Search</h1>
-  <form method="get" action="{% url 'card_search' %}">
+{% extends 'cards/base.html' %}
+
+{% block title %}Card Search{% endblock %}
+
+{% block content %}
+  <div class="breadcrumb"><a href="{% url 'home' %}">&larr; Home</a></div>
+  <div class="page-header">
+    <h1>Card Search</h1>
+  </div>
+  <form class="search-form" method="get" action="{% url 'card_search' %}">
     <input type="search" name="q" value="{{ query }}" placeholder="Search card name" autofocus>
-    <button type="submit">Search</button>
+    <button type="submit" class="btn btn-primary">Search</button>
   </form>
 
   {% if query %}
-    <h2>Results for "{{ query }}" ({{ cards|length }}{% if truncated %}+{% endif %})</h2>
-    <ul>
+    <h2 class="section-title">Results for "{{ query }}" <span class="count">{{ cards|length }}{% if truncated %}+{% endif %}</span></h2>
+    <ul class="result-list">
       {% for card in cards %}
-        <li>
-          <a href="{% url 'get_card_info' %}?id={{ card.scryfall_id }}"><strong>{{ card.name }}</strong></a> {{ card.mana_cost|default_if_none:"" }}
-          &mdash; {{ card.type_line|default_if_none:"" }}
-          {% if card.oracle_text %}<br><small>{{ card.oracle_text|linebreaksbr }}</small>{% endif %}
+        <li class="result">
+          <div class="result-title"><a href="{% url 'get_card_info' %}?id={{ card.scryfall_id }}">{{ card.name }}</a>
+            {% if card.mana_cost %}<span class="mana">{{ card.mana_cost }}</span>{% endif %}</div>
+          <div class="result-meta">{{ card.type_line|default_if_none:"" }}</div>
+          {% if card.oracle_text %}<div class="result-text">{{ card.oracle_text|linebreaksbr }}</div>{% endif %}
         </li>
       {% empty %}
-        <li>No cards found.</li>
+        <li class="empty">No cards found.</li>
       {% endfor %}
     </ul>
   {% endif %}
-</body>
-</html>
+{% endblock %}
+

@@ -1,47 +1,58 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Build Deck</title>
-</head>
-<body>
-  {% include 'cards/auth_nav.html' %}
-  <p><a href="{% url 'deck_builder' %}">&larr; Deck Builder</a></p>
-  <h1>Build Deck</h1>
-    <form method="get" action="{% url 'get_valid_cards' %}">
+{% extends 'cards/base.html' %}
+
+{% block title %}Build Deck{% endblock %}
+
+{% block content %}
+  <div class="breadcrumb"><a href="{% url 'deck_builder' %}">&larr; Deck Builder</a></div>
+  <div class="page-header">
+    <h1>Build Deck</h1>
+  </div>
+  <form class="search-form" method="get" action="{% url 'get_valid_cards' %}">
     <label for="card_name">Commander:</label>
-    <input type="search" name="q" value="{{ query }}" placeholder="Enter Commander Name" autofocus>
-    <button type="submit">Generate Valid Cards</button>
+    <input type="search" id="card_name" name="q" value="{{ query }}" placeholder="Enter Commander Name" autofocus>
+    <button type="submit" class="btn btn-primary">Generate Valid Cards</button>
   </form>
 
-  {% if card_groups %}
-    <li style="margin-bottom: 0.1;"></li>
-    <form method="post" action="{% url 'save_deck' %}"{% if not user.is_authenticated %} onsubmit="document.getElementById('login-warning').hidden = false; return false;"{% endif %}>
-      {% csrf_token %}
-      <input type="hidden" name="commander_id" value="{{ commander.pk }}">
-      {% for group in card_groups %}{% for entry in group.cards %}
-        <input type="hidden" name="card_ids" value="{{ entry.card.pk }}">
-      {% endfor %}{% endfor %}
-      <input type="text" name="deck_name" placeholder="Deck name" maxlength="100" required>
-      <button type="submit">Save Deck</button>
-    </form>
-    <p id="login-warning" hidden style="color: red;">You must be logged in to save a deck.</p>
-    <h2>Valid Cards</h2>
-    <p><strong>Commander:</strong> {{ commander.name }}</p>
-    {% for group in card_groups %}
-      <h3 style="margin-bottom: 0;">{{ group.name }} ({{ group.cards|length }})</h3>
-      <ul style="list-style: none; padding-left: 0; margin-top: 0;">
-        {% for entry in group.cards %}
-          <li>- {{ entry.card }} ({{ entry.score }})</li>
-        {% endfor %}
-      </ul>
-    {% endfor %}
-  {% endif %}
-
   {% if error %}
-    <p style="color: red;">{{ error }}</p>
+    <div class="alert alert-error"><p>{{ error }}</p></div>
   {% endif %}
 
+  {% if card_groups %}
+    <div class="panel">
+      <div class="commander-banner">
+        <div>
+          <div class="muted">Commander</div>
+          <div class="commander-name">{{ commander.name }}</div>
+        </div>
+        <form class="save-form" method="post" action="{% url 'save_deck' %}"{% if not user.is_authenticated %} onsubmit="document.getElementById('login-warning').hidden = false; return false;"{% endif %}>
+          {% csrf_token %}
+          <input type="hidden" name="commander_id" value="{{ commander.pk }}">
+          {% for group in card_groups %}{% for entry in group.cards %}
+            <input type="hidden" name="card_ids" value="{{ entry.card.pk }}">
+          {% endfor %}{% endfor %}
+          <input type="text" name="deck_name" placeholder="Deck name" maxlength="100" required>
+          <button type="submit" class="btn btn-primary">Save Deck</button>
+        </form>
+      </div>
+      <div class="alert alert-error" id="login-warning" hidden><p>You must be logged in to save a deck.</p></div>
+    </div>
 
-</body>
-</html>
+    <h2 class="section-title">Valid Cards</h2>
+    <div class="group-grid">
+      {% for group in card_groups %}
+        <section class="group">
+          <div class="group-head">
+            <h3>{{ group.name }}</h3>
+            <span class="count">{{ group.cards|length }}</span>
+          </div>
+          <ul class="card-list">
+            {% for entry in group.cards %}
+              <li><span class="card-name">{{ entry.card }}</span> <span class="score">{{ entry.score }}</span></li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endblock %}
+
