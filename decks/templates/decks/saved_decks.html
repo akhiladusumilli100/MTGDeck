@@ -1,25 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Saved Decks</title>
-</head>
-<body>
-  {% include 'cards/auth_nav.html' %}
-  <p><a href="{% url 'deck_builder' %}">&larr; Deck Builder</a></p>
-  <h1>Saved Decks</h1>
-  <ul>
+{% extends 'cards/base.html' %}
+
+{% block title %}Saved Decks{% endblock %}
+
+{% block content %}
+  <div class="breadcrumb"><a href="{% url 'deck_builder' %}">&larr; Deck Builder</a></div>
+  <div class="page-header">
+    <h1>Saved Decks</h1>
+  </div>
+  <ul class="deck-list">
     {% for deck in decks %}
-      <li style="margin-bottom: 0.5em;">
-        <a href="{% url 'deck_detail' deck.pk %}">{{ deck.name }}</a>
-        <form method="post" action="{% url 'delete_deck' deck.pk %}" style="display: inline;">
+      <li class="deck-item">
+        <a class="deck-name" href="{% url 'deck_detail' deck.pk %}">{{ deck.name }}</a>
+        <form method="post" action="{% url 'delete_deck' deck.pk %}">
           {% csrf_token %}
-          <button type="submit">Delete</button>
+          <button type="submit" class="btn btn-danger btn-sm">Delete</button>
         </form>
       </li>
     {% empty %}
-      <li>No saved decks.</li>
+      <li class="empty">No saved decks.</li>
     {% endfor %}
   </ul>
-</body>
-</html>
+{% endblock %}
+

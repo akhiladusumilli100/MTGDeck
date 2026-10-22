@@ -1,32 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Card Info</title>
-</head>
-<body>
-  {% include 'cards/auth_nav.html' %}
-  <p><a href="{% url 'card_search' %}">&larr; Card Search</a></p>
-  <h1>Card Info</h1>
-  <form method="get" action="{% url 'get_card_info' %}">
+{% extends 'cards/base.html' %}
+
+{% block title %}Card Info{% endblock %}
+
+{% block content %}
+  <div class="breadcrumb"><a href="{% url 'card_search' %}">&larr; Card Search</a></div>
+  <div class="page-header">
+    <h1>Card Info</h1>
+  </div>
+  <form class="search-form" method="get" action="{% url 'get_card_info' %}">
     <input type="search" name="q" value="{{ query }}" placeholder="Search card name" autofocus>
-    <button type="submit">Search</button>
+    <button type="submit" class="btn btn-primary">Search</button>
   </form>
   {% if card %}
-    <h2>{{ card.name }}</h2>
-    <p><strong>Mana Cost:</strong> {{ card.mana_cost|default_if_none:"" }}</p>
-    <p><strong>Mana Value:</strong> {{ card.cmc|default_if_none:"" }}</p>
-    <p><strong>Type:</strong> {{ card.type_line|default_if_none:"" }}</p>
-    <!--{% if card.colors %}<p><strong>Colors:</strong> {{ card.colors }}</p>{% endif %} -->
-    {% if card.color_identity %}<p><strong>Color Identity:</strong> {{ card.color_identity }}</p>{% endif %}
-    {% if card.power or card.toughness %}<p><strong>Power/Toughness:</strong> {{ card.power|default_if_none:"" }}/{{ card.toughness|default_if_none:"" }}</p>{% endif %}
-    {% if card.keywords %}<p><strong>Keywords:</strong> {{ card.keywords }}</p>{% endif %}
-    {% if tags %}<p><strong>Tags:</strong> {{ tags|join:", " }}</p>{% endif %}
-    {% if card.oracle_text %}
-      <p><strong>Oracle Text:</strong><br><small>{{ card.oracle_text|linebreaksbr }}</small></p>
-    {% endif %}
+    <div class="panel">
+      <div class="card-detail-name">{{ card.name }}</div>
+      <div class="facts">
+        <div class="fact"><span class="fact-label">Mana Cost</span><span class="fact-value">{% if card.mana_cost %}<span class="mana">{{ card.mana_cost }}</span>{% else %}&mdash;{% endif %}</span></div>
+        <div class="fact"><span class="fact-label">Mana Value</span><span class="fact-value">{{ card.cmc|default_if_none:"" }}</span></div>
+        <div class="fact"><span class="fact-label">Type</span><span class="fact-value">{{ card.type_line|default_if_none:"" }}</span></div>
+        <!--{% if card.colors %}<p><strong>Colors:</strong> {{ card.colors }}</p>{% endif %} -->
+        {% if card.color_identity %}<div class="fact"><span class="fact-label">Color Identity</span><span class="fact-value">{{ card.color_identity }}</span></div>{% endif %}
+        {% if card.power or card.toughness %}<div class="fact"><span class="fact-label">Power/Toughness</span><span class="fact-value">{{ card.power|default_if_none:"" }}/{{ card.toughness|default_if_none:"" }}</span></div>{% endif %}
+        {% if card.keywords %}<div class="fact"><span class="fact-label">Keywords</span><span class="fact-value">{{ card.keywords }}</span></div>{% endif %}
+      </div>
+      {% if tags %}
+        <p><span class="fact-label">Tags</span>{% for tag in tags %}<span class="chip">{{ tag }}</span>{% endfor %}</p>
+      {% endif %}
+      {% if card.oracle_text %}
+        <span class="fact-label">Oracle Text</span>
+        <div class="oracle">{{ card.oracle_text|linebreaksbr }}</div>
+      {% endif %}
+    </div>
   {% elif query %}
-    <p>- No card found with the name "{{ query }}".</p>
+    <div class="empty">No card found with the name "{{ query }}".</div>
   {% endif %}
-</body>
-</html>
+{% endblock %}

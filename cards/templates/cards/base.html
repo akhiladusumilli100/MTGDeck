@@ -1,0 +1,25 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'cards/site.css' %}">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="{% url 'home' %}">MTG Deck</a>
+      <nav class="nav-links">
+        <a href="{% url 'card_search' %}">Card Search</a>
+        <a href="{% url 'deck_builder' %}">Deck Builder</a>
+        {% if user.is_authenticated %}<a href="{% url 'saved_decks' %}">Saved Decks</a>{% endif %}
+      </nav>
+      {% include 'cards/auth_nav.html' %}
+    </div>
+  </header>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
